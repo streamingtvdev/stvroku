@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>StreamingTV Playlist Editor</title>
+  <meta name="description" content="Manage XC and M3U playlists on your linked StreamingTV device." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <span class="logo">▶</span>
+      <div>
+        <strong>StreamingTV</strong>
+        <span class="muted">Playlist Editor · Beta</span>
+      </div>
+    </div>
+    <button id="btnSignOut" class="ghost hidden">Sign out</button>
+  </header>
+
+  <main class="wrap">
+    <!-- Step 1: redeem device code -->
+    <section id="viewCode" class="card">
+      <h1>Enter your device code</h1>
+      <p class="muted">
+        On your TV, press and hold the <kbd>*</kbd> button, then type the code shown here.
+        The code expires in 10 minutes and only works with that device.
+      </p>
+      <form id="formCode" autocomplete="off">
+        <label for="codeInput">Device code</label>
+        <input id="codeInput" name="code" placeholder="ABC 123" maxlength="20" required />
+        <p class="hint">This editor does not provide any media content. Connect your own playlist server.</p>
+        <button type="submit" class="primary">Continue</button>
+      </form>
+      <p id="codeError" class="error hidden"></p>
+    </section>
+
+    <!-- Step 2: manage playlists -->
+    <section id="viewEditor" class="card hidden">
+      <div class="row space">
+        <div>
+          <h1>Playlists</h1>
+          <p class="muted">
+            <span id="deviceName">Device</span>
+            <span class="chip" id="macChip">MAC —</span>
+          </p>
+        </div>
+        <button id="btnAdd" class="primary">+ Add playlist</button>
+      </div>
+
+      <div id="playlistList" class="list"></div>
+      <p id="editorError" class="error hidden"></p>
+      <p id="editorOk" class="ok hidden"></p>
+
+      <div class="row actions">
+        <button id="btnSave" class="primary">Save changes</button>
+        <button id="btnReload" class="ghost">Reload</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <span class="muted">Beta · For linked StreamingTV devices only · No media content is provided by this tool</span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
