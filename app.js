@@ -196,18 +196,28 @@ $("formCode").addEventListener("submit", async (e) => {
   }
 
   try {
-    const hash = await pinHash(pin, mac);
-    await api("/api/player/bind", {
+    await api("/api/player/verify", {
       method: "POST",
       body: {
         mac_address: mac,
-        pin_hash: hash,
-        device_uuid: "web-" + mac,
+        pin: pin,
       },
     });
     state.mac = mac;
     state.pin = pin;
-    state.playlists = [{ name: "My Playlist", kind: "xc", server_url: "", username: "", password: "", epg_url: "", enabled: true, sort_order: 0 }];
+
+    // Check localStorage for previously saved playlists on this device
+    let saved = null;
+    try {
+      const raw = localStorage.getItem("playlists_" + mac);
+      if (raw) saved = JSON.parse(raw);
+    } catch (_) { /* ignore */ }
+
+    if (Array.isArray(saved) && saved.length > 0) {
+      state.playlists = saved;
+    } else {
+      state.playlists = [{ name: "My Playlist", kind: "xc", server_url: "", username: "", password: "", epg_url: "", enabled: true, sort_order: 0 }];
+    }
     enterEditor();
   } catch (err) {
     showError($("codeError"), err.message || "Could not link to this device.");
@@ -272,6 +282,10 @@ $("btnSave").addEventListener("click", async () => {
       },
     });
 
+    try {
+      localStorage.setItem("playlists_" + state.mac, JSON.stringify(payload));
+    } catch (_) { /* ignore */ }
+
     $("editorOk").textContent = "Saved. Your TV will pick this up automatically (give it a few seconds).";
     show($("editorOk"), true);
   } catch (err) {
@@ -284,9 +298,21 @@ $("btnSave").addEventListener("click", async () => {
 });
 
 $("btnReload").addEventListener("click", () => {
-  // Reload is local-only: ciphertext cannot be read back in the browser
-  // without the same PIN session. Re-enter MAC + PIN instead.
-  showError($("editorError"), "To change playlists, use Save — or hold * on the TV for a new PIN and start over.");
+  let saved = null;
+  try {
+    const raw = localStorage.getItem("playlists_" + state.mac);
+    if (raw) saved = JSON.parse(raw);
+  } catch (_) { /* ignore */ }
+
+  if (Array.isArray(saved) && saved.length > 0) {
+    state.playlists = saved;
+    renderList();
+    showError($("editorError"), "");
+    $("editorOk").textContent = "Playlists reloaded from local storage.";
+    show($("editorOk"), true);
+  } else {
+    showError($("editorError"), "No saved local cache found. Hold * on the TV for a new PIN to re-enter credentials.");
+  }
 });
 
 $("btnUnbind").addEventListener("click", async () => {
@@ -296,6 +322,9 @@ $("btnUnbind").addEventListener("click", async () => {
       method: "POST",
       body: { mac_address: state.mac, pin: state.pin },
     });
+    try {
+      localStorage.removeItem("playlists_" + state.mac);
+    } catch (_) { /* ignore */ }
     signOut();
     showError($("codeError"), "MAC removed from system.");
   } catch (err) {
