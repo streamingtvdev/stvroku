@@ -1,14 +1,19 @@
 /**
- * StreamingTV Playlist Editor (Cloudflare Pages)
- * Talks to the KING API: /api/editor/redeem and /api/editor/playlists
+ * StreamingTV Playlist Setup (Cloudflare Pages)
+ *
+ * Flow:
+ *  1. User enters MAC + PIN shown on the TV
+ *  2. Types XC / M3U details
+ *  3. We AES-256-CBC encrypt in this browser (key = SHA256(pin:mac))
+ *  4. Server stores only ciphertext; TV decrypts locally
+ *
  * Set API_BASE to your API origin before deploying.
  */
 const API_BASE = "https://api.pirateking.cloud";
 
 const state = {
-  session: localStorage.getItem("stv_editor_session") || "",
-  deviceName: localStorage.getItem("stv_editor_device") || "",
-  mac: localStorage.getItem("stv_editor_mac") || "",
+  mac: "",
+  pin: "",
   playlists: [],
 };
 
@@ -24,9 +29,17 @@ function showError(el, msg) {
   show(el, true);
 }
 
-async function api(path, { method = "GET", body, session = true } = {}) {
+function normalizeMac(mac) {
+  return String(mac || "").trim().toUpperCase().replace(/[^0-9A-F]/g, "");
+}
+
+function formatMac(mac) {
+  const n = normalizeMac(mac);
+  return (n.match(/.{1,2}/g) || []).join(":");
+}
+
+async function api(path, { method = "GET", body } = {}) {
   const headers = { "Content-Type": "application/json" };
-  if (session && state.session) headers["X-Editor-Session"] = state.session;
   const res = await fetch(API_BASE + path, {
     method,
     headers,
@@ -35,7 +48,7 @@ async function api(path, { method = "GET", body, session = true } = {}) {
   let data = null;
   try { data = await res.json(); } catch (_) { /* empty */ }
   if (!res.ok) {
-    const detail = (data && (data.detail || data.error)) || res.statusText;
+    const detail = (data && (data.detail || data.error || data.message)) || res.statusText;
     const err = new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
     err.status = res.status;
     throw err;
@@ -43,12 +56,50 @@ async function api(path, { method = "GET", body, session = true } = {}) {
   return data;
 }
 
+// --- E2EE helpers (must match the TV: AES-256-CBC, key = SHA256(pin:mac)) ---
+
+async function deriveAesKey(pin, mac) {
+  const enc = new TextEncoder();
+  const material = await crypto.subtle.digest("SHA-256", enc.encode(pin + ":" + mac));
+  return crypto.subtle.importKey("raw", material, { name: "AES-CBC" }, false, ["encrypt", "decrypt"]);
+}
+
+function b64(buf) {
+  const bytes = buf instanceof ArrayBuffer ? new Uint8Array(buf) : buf;
+  let s = "";
+  bytes.forEach((b) => { s += String.fromCharCode(b); });
+  return btoa(s);
+}
+
+function unb64(str) {
+  const bin = atob(str);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+async function encryptPayload(pin, mac, obj) {
+  const key = await deriveAesKey(pin, mac);
+  const iv = crypto.getRandomValues(new Uint8Array(16));
+  const plain = new TextEncoder().encode(JSON.stringify(obj));
+  const cipher = await crypto.subtle.encrypt({ name: "AES-CBC", iv }, key, plain);
+  return { iv: b64(iv), ciphertext: b64(cipher) };
+}
+
+async function pinHash(pin, mac) {
+  // Must match the TV + API: hex(SHA256(pin + ":" + mac))
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(pin + ":" + mac));
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+// --- UI ---
+
 function enterEditor() {
   show($("viewCode"), false);
   show($("viewEditor"), true);
   show($("btnSignOut"), true);
-  $("deviceName").textContent = state.deviceName || "Device";
-  $("macChip").textContent = "MAC " + (state.mac || "—");
+  $("macChip").textContent = "MAC " + formatMac(state.mac);
+  $("deviceName").textContent = "This TV";
   renderList();
 }
 
@@ -69,13 +120,14 @@ function renderList() {
   state.playlists.forEach((p, idx) => {
     const div = document.createElement("div");
     div.className = "item";
+    const isM3u = p.kind === "m3u";
     div.innerHTML = `
       <div class="head">
         <input data-idx="${idx}" data-key="name" value="${escapeAttr(p.name || "My Playlist")}" style="max-width:280px" />
         <div class="row">
           <select data-idx="${idx}" data-key="kind" style="width:120px">
-            <option value="xc" ${p.kind === "xc" ? "selected" : ""}>XC</option>
-            <option value="m3u" ${p.kind === "m3u" ? "selected" : ""}>M3U</option>
+            <option value="xc" ${!isM3u ? "selected" : ""}>XC</option>
+            <option value="m3u" ${isM3u ? "selected" : ""}>M3U</option>
           </select>
           <label class="row" style="margin:0;gap:6px;font-size:13px">
             <input type="checkbox" data-idx="${idx}" data-key="enabled" ${p.enabled !== false ? "checked" : ""} style="width:auto" />
@@ -86,10 +138,10 @@ function renderList() {
       </div>
       <div class="fields">
         <div class="full">
-          <label>${p.kind === "m3u" ? "M3U playlist URL" : "Server URL (http://host:port)"}</label>
-          <input data-idx="${idx}" data-key="${p.kind === "m3u" ? "m3u_url" : "server_url"}"
-                 value="${escapeAttr(p.kind === "m3u" ? (p.m3u_url || "") : (p.server_url || ""))}"
-                 placeholder="${p.kind === "m3u" ? "https://example.com/playlist.m3u" : "http://my-provider.com:8080"}" />
+          <label>${isM3u ? "M3U playlist URL" : "Server URL (http://host:port)"}</label>
+          <input data-idx="${idx}" data-key="${isM3u ? "m3u_url" : "server_url"}"
+                 value="${escapeAttr(isM3u ? (p.m3u_url || "") : (p.server_url || ""))}"
+                 placeholder="${isM3u ? "https://example.com/playlist.m3u" : "http://my-provider.com:8080"}" />
         </div>
         <div>
           <label>Username</label>
@@ -132,32 +184,35 @@ function escapeAttr(v) {
 $("formCode").addEventListener("submit", async (e) => {
   e.preventDefault();
   showError($("codeError"), "");
-  const code = $("codeInput").value.trim();
+  const mac = normalizeMac($("macInput").value);
+  const pin = $("pinInput").value.trim().replace(/\s+/g, "");
+  if (mac.length < 12) {
+    showError($("codeError"), "Enter the full MAC address from the TV.");
+    return;
+  }
+  if (pin.length < 4) {
+    showError($("codeError"), "Enter the PIN shown on the TV.");
+    return;
+  }
+
   try {
-    const data = await api("/api/editor/redeem", {
+    const hash = await pinHash(pin, mac);
+    await api("/api/player/bind", {
       method: "POST",
-      session: false,
-      body: { code, mac_address: null },
+      body: {
+        mac_address: mac,
+        pin_hash: hash,
+        device_uuid: "web-" + mac,
+      },
     });
-    state.session = data.session_token;
-    state.deviceName = data.device_name || "Device";
-    state.mac = data.mac_address || "";
-    localStorage.setItem("stv_editor_session", state.session);
-    localStorage.setItem("stv_editor_device", state.deviceName);
-    localStorage.setItem("stv_editor_mac", state.mac);
-    await loadPlaylists();
+    state.mac = mac;
+    state.pin = pin;
+    state.playlists = [{ name: "My Playlist", kind: "xc", server_url: "", username: "", password: "", epg_url: "", enabled: true, sort_order: 0 }];
     enterEditor();
   } catch (err) {
-    showError($("codeError"), err.message || "Could not use that code.");
+    showError($("codeError"), err.message || "Could not link to this device.");
   }
 });
-
-async function loadPlaylists() {
-  const data = await api("/api/editor/playlists");
-  state.playlists = (data.playlists || []).map((p) => ({ ...p }));
-  state.deviceName = data.device_name || state.deviceName;
-  state.mac = data.mac_address || state.mac;
-}
 
 $("btnAdd").addEventListener("click", () => {
   state.playlists.push({
@@ -178,60 +233,82 @@ $("btnSave").addEventListener("click", async () => {
   showError($("editorError"), "");
   show($("editorOk"), false);
   try {
+    if (!state.playlists.length) {
+      showError($("editorError"), "Add at least one playlist.");
+      return;
+    }
+    for (const p of state.playlists) {
+      if (p.kind === "m3u" && !(p.m3u_url || "").trim()) {
+        showError($("editorError"), "Every M3U playlist needs a URL.");
+        return;
+      }
+      if (p.kind !== "m3u" && !(p.server_url || "").trim()) {
+        showError($("editorError"), "Every XC playlist needs a server URL.");
+        return;
+      }
+    }
+
+    // One payload the TV decrypts and applies (array of playlists)
     const payload = state.playlists.map((p, i) => ({
       name: p.name || "Playlist",
       kind: p.kind || "xc",
-      server_url: p.server_url || null,
-      m3u_url: p.m3u_url || null,
-      epg_url: p.epg_url || null,
-      username: p.username || null,
-      password: p.password || null,
+      server_url: (p.server_url || "").trim(),
+      m3u_url: (p.m3u_url || "").trim(),
+      epg_url: (p.epg_url || "").trim(),
+      username: p.username || "",
+      password: p.password || "",
       enabled: p.enabled !== false,
       sort_order: i,
     }));
-    await api("/api/editor/playlists", { method: "PUT", body: payload });
-    $("editorOk").textContent = "Saved. Your TV will pick up changes the next time it loads a list.";
+
+    const { iv, ciphertext } = await encryptPayload(state.pin, state.mac, payload);
+    await api("/api/player/submit", {
+      method: "POST",
+      body: {
+        mac_address: state.mac,
+        pin: state.pin,
+        iv,
+        ciphertext,
+      },
+    });
+
+    $("editorOk").textContent = "Saved. Your TV will pick this up automatically (give it a few seconds).";
     show($("editorOk"), true);
-    await loadPlaylists();
-    renderList();
   } catch (err) {
-    if (err.status === 401) {
-      signOut();
-      showError($("codeError"), "Session expired. Enter a new device code.");
+    if (err.status === 404 || err.status === 410) {
+      showError($("editorError"), err.message + " Hold * on the TV to get a new PIN.");
       return;
     }
     showError($("editorError"), err.message || "Save failed.");
   }
 });
 
-$("btnReload").addEventListener("click", async () => {
+$("btnReload").addEventListener("click", () => {
+  // Reload is local-only: ciphertext cannot be read back in the browser
+  // without the same PIN session. Re-enter MAC + PIN instead.
+  showError($("editorError"), "To change playlists, use Save — or hold * on the TV for a new PIN and start over.");
+});
+
+$("btnUnbind").addEventListener("click", async () => {
+  if (!confirm("Remove this MAC from the system? The TV will need setup again.")) return;
   try {
-    await loadPlaylists();
-    renderList();
-    showError($("editorError"), "");
+    await api("/api/player/unbind", {
+      method: "POST",
+      body: { mac_address: state.mac, pin: state.pin },
+    });
+    signOut();
+    showError($("codeError"), "MAC removed from system.");
   } catch (err) {
-    showError($("editorError"), err.message || "Reload failed.");
+    showError($("editorError"), err.message || "Could not remove device.");
   }
 });
 
 function signOut() {
-  state.session = "";
-  localStorage.removeItem("stv_editor_session");
-  localStorage.removeItem("stv_editor_device");
-  localStorage.removeItem("stv_editor_mac");
+  state.mac = "";
+  state.pin = "";
+  state.playlists = [];
   enterCodeView();
 }
 $("btnSignOut").addEventListener("click", signOut);
 
-(async function boot() {
-  if (state.session) {
-    try {
-      await loadPlaylists();
-      enterEditor();
-      return;
-    } catch (_) {
-      signOut();
-    }
-  }
-  enterCodeView();
-})();
+enterCodeView();
