@@ -312,3 +312,14 @@ function signOut() {
 $("btnSignOut").addEventListener("click", signOut);
 
 enterCodeView();
+
+// Prefill from QR / shared link: ?mac=AABBCCDDEEFF&code=123456
+(function prefillFromQuery() {
+  try {
+    const q = new URLSearchParams(location.search);
+    const mac = q.get("mac") || q.get("device") || "";
+    const code = q.get("code") || q.get("pin") || "";
+    if (mac) $("macInput").value = formatMac(mac);
+    if (code) $("pinInput").value = code;
+  } catch (_) { /* ignore */ }
+})();
