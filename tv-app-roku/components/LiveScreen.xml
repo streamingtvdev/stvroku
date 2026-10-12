@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="LiveScreen" extends="Group" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <interface>
+        <field id="theme" type="assocarray" onChange="OnThemeChanged" />
+        <field id="playFullscreen" type="assocarray" alwaysNotify="true" />
+    </interface>
+
+    <script type="text/brightscript" uri="pkg:/source/utils.brs" />
+    <script type="text/brightscript" uri="pkg:/source/storage.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api.brs" />
+    <script type="text/brightscript" uri="pkg:/components/LiveScreen.brs" />
+
+    <children>
+        <!-- ============================================== -->
+        <!-- PANE 1: Categories Left Rail                   -->
+        <!-- ============================================== -->
+        <Group id="paneCategories" translation="[60, 0]">
+            <Rectangle id="catPanelBg" width="340" height="920" color="0x1A1D24FF" />
+            
+            <!-- Category Rail Header -->
+            <Label
+                id="catHeaderLabel"
+                translation="[20, 20]"
+                width="300"
+                text="CATEGORIES"
+                font="font:SmallBoldSystemFont"
+                color="0xF57C00FF" />
+
+            <LabelList
+                id="categoryList"
+                translation="[10, 60]"
+                itemSize="[320, 52]"
+                itemSpacing="[0, 4]"
+                drawFocusFeedback="true" />
+        </Group>
+
+        <!-- ============================================== -->
+        <!-- PANE 2: Channels Center Column                 -->
+        <!-- ============================================== -->
+        <Group id="paneChannels" translation="[430, 0]">
+            <Rectangle id="chanPanelBg" width="460" height="920" color="0x1A1D24FF" />
+            
+            <!-- Channels Column Header -->
+            <Label
+                id="chanHeaderLabel"
+                translation="[20, 20]"
+                width="420"
+                text="CHANNELS"
+                font="font:SmallBoldSystemFont"
+                color="0xF57C00FF" />
+
+            <LabelList
+                id="channelList"
+                translation="[10, 60]"
+                itemSize="[440, 60]"
+                itemSpacing="[0, 6]"
+                drawFocusFeedback="true" />
+
+            <!-- Empty / Loading Indicator -->
+            <Label
+                id="chanLoadingLabel"
+                translation="[20, 400]"
+                width="420"
+                horizAlign="center"
+                text="Loading channels..."
+                font="font:MediumSystemFont"
+                color="0xAAAAAAFF" />
+        </Group>
+
+        <!-- ============================================== -->
+        <!-- PANE 3: Right Panel (Preview & Guide Synopsis)  -->
+        <!-- ============================================== -->
+        <Group id="paneRight" translation="[920, 0]">
+            <!-- Live Preview Video Window (16:9 940x528) -->
+            <Group id="previewWindow">
+                <Rectangle id="previewBg" width="940" height="528" color="0x0E1015FF" />
+                
+                <!-- Video Node for Live Preview -->
+                <Video
+                    id="previewVideo"
+                    width="940"
+                    height="528"
+                    loop="true"
+                    mute="true" />
+
+                <!-- Static Backdrop / Channel Logo (Used on Low-RAM tiers or while loading) -->
+                <Poster
+                    id="previewPoster"
+                    translation="[350, 164]"
+                    width="240"
+                    height="200"
+                    loadDisplayMode="scaleToFit"
+                    uri="pkg:/images/channel_placeholder.png" />
+
+                <!-- Live Stream Status Tag -->
+                <Rectangle id="previewLiveBadge" translation="[20, 20]" width="80" height="30" color="0xF57C00FF" visible="false">
+                    <Label width="80" height="30" horizAlign="center" vertAlign="center" text="● LIVE" font="font:SmallBoldSystemFont" color="0xFFFFFFFF" />
+                </Rectangle>
+            </Group>
+
+            <!-- Guide Program Synopsis Card -->
+            <Group id="synopsisCard" translation="[0, 548]">
+                <Rectangle id="synopsisBg" width="940" height="372" color="0x1A1D24FF" />
+
+                <!-- Active Channel Logo -->
+                <Poster
+                    id="activeChannelLogo"
+                    translation="[30, 24]"
+                    width="80"
+                    height="50"
+                    loadDisplayMode="scaleToFit"
+                    uri="pkg:/images/channel_placeholder.png" />
+
+                <!-- Active Channel Name -->
+                <Label
+                    id="activeChannelName"
+                    translation="[130, 26]"
+                    width="780"
+                    text="Select a channel"
+                    font="font:LargeBoldSystemFont"
+                    color="0xFFFFFFFF" />
+
+                <!-- Now Airing Section -->
+                <Rectangle id="nowBadge" translation="[30, 92]" width="60" height="26" color="0xF57C00FF">
+                    <Label width="60" height="26" horizAlign="center" vertAlign="center" text="NOW" font="font:SmallBoldSystemFont" color="0xFFFFFFFF" />
+                </Rectangle>
+
+                <Label
+                    id="nowTitleLabel"
+                    translation="[105, 92]"
+                    width="800"
+                    text="No Program Information"
+                    font="font:MediumBoldSystemFont"
+                    color="0xFFFFFFFF" />
+
+                <Label
+                    id="nowTimeLabel"
+                    translation="[30, 126]"
+                    width="880"
+                    text=""
+                    font="font:SmallSystemFont"
+                    color="0xAAAAAAFF" />
+
+                <Label
+                    id="nowDescLabel"
+                    translation="[30, 160]"
+                    width="880"
+                    height="100"
+                    maxLines="4"
+                    wrap="true"
+                    text=""
+                    font="font:SmallSystemFont"
+                    color="0xCCCCCCFF" />
+
+                <!-- Next Airing Section -->
+                <Label
+                    id="nextTitleLabel"
+                    translation="[30, 275]"
+                    width="880"
+                    text=""
+                    font="font:SmallBoldSystemFont"
+                    color="0xFFA726FF" />
+
+                <!-- Press OK Fullscreen Callout -->
+                <Label
+                    id="fullscreenTip"
+                    translation="[30, 325]"
+                    width="880"
+                    horizAlign="right"
+                    text="[ Press OK for Fullscreen ]"
+                    font="font:SmallBoldSystemFont"
+                    color="0xFFFFFFFF" />
+            </Group>
+        </Group>
+
+        <!-- Preview Debounce Timer (waits 600ms before tuning preview video to avoid thrash) -->
+        <Timer id="previewDebounceTimer" repeat="false" duration="0.6" />
+        <!-- EPG Fetch Timer -->
+        <Timer id="epgRefreshTimer" repeat="false" duration="0.3" />
+    </children>
+</component>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="VodScreen" extends="Group" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <interface>
+        <field id="theme" type="assocarray" onChange="OnThemeChanged" />
+        <field id="vodType" type="string" value="movies" />
+        <field id="playMedia" type="assocarray" alwaysNotify="true" />
+    </interface>
+
+    <script type="text/brightscript" uri="pkg:/source/utils.brs" />
+    <script type="text/brightscript" uri="pkg:/source/storage.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api.brs" />
+    <script type="text/brightscript" uri="pkg:/components/VodScreen.brs" />
+
+    <children>
+        <!-- Category Left Rail (Width 320) -->
+        <Group id="paneCategories" translation="[60, 0]">
+            <Rectangle id="catPanelBg" width="320" height="920" color="0x1A1D24FF" />
+            <Label id="catHeaderLabel" translation="[20, 20]" width="280" text="GENRES" font="font:SmallBoldSystemFont" color="0xF57C00FF" />
+            <LabelList id="categoryList" translation="[10, 60]" itemSize="[300, 52]" itemSpacing="[0, 4]" drawFocusFeedback="true" />
+        </Group>
+
+        <!-- Poster Grid (Width 1480) -->
+        <Group id="paneGrid" translation="[410, 0]">
+            <Rectangle id="gridPanelBg" width="1450" height="920" color="0x1A1D24FF" />
+            <Label id="gridHeaderLabel" translation="[30, 20]" width="1390" text="MOVIES" font="font:SmallBoldSystemFont" color="0xF57C00FF" />
+
+            <PosterGrid
+                id="mediaGrid"
+                translation="[30, 70]"
+                basePosterSize="[200, 300]"
+                itemSpacing="[30, 30]"
+                numColumns="6"
+                numRows="2"
+                captionMode="under"
+                drawFocusFeedback="true" />
+
+            <!-- Loading Indicator -->
+            <Label id="gridLoadingLabel" translation="[30, 400]" width="1390" horizAlign="center" text="Loading titles..." font="font:MediumSystemFont" color="0xAAAAAAFF" />
+        </Group>
+
+        <!-- Media Details Modal Dialog -->
+        <Group id="detailsModal" translation="[360, 140]" visible="false">
+            <Rectangle width="1200" height="680" color="0x14171FF2" />
+
+            <!-- Poster -->
+            <Poster id="modalPoster" translation="[60, 60]" width="340" height="510" loadDisplayMode="scaleToFit" uri="pkg:/images/channel_placeholder.png" />
+
+            <!-- Info Container -->
+            <Group translation="[440, 60]">
+                <Label id="modalTitle" width="700" text="Title" font="font:LargeBoldSystemFont" color="0xFFFFFFFF" />
+                <Label id="modalMeta" translation="[0, 60]" width="700" text="2024 • Rating: 8.5" font="font:SmallBoldSystemFont" color="0xF57C00FF" />
+                <Label id="modalPlot" translation="[0, 100]" width="700" height="260" maxLines="8" wrap="true" text="Plot synopsis..." font="font:SmallSystemFont" color="0xCCCCCCFF" />
+
+                <!-- Action Buttons -->
+                <Group translation="[0, 420]">
+                    <Rectangle id="btnModalPlay" width="220" height="52" color="0xF57C00FF">
+                        <Label width="220" height="52" horizAlign="center" vertAlign="center" text="▶ PLAY NOW" font="font:MediumBoldSystemFont" color="0xFFFFFFFF" />
+                    </Rectangle>
+                    <Rectangle id="btnModalBack" translation="[250, 0]" width="160" height="52" color="0x242832FF">
+                        <Label width="160" height="52" horizAlign="center" vertAlign="center" text="CLOSE" font="font:MediumBoldSystemFont" color="0xFFFFFFFF" />
+                    </Rectangle>
+                </Group>
+            </Group>
+        </Group>
+    </children>
+</component>

@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="PlayerScreen" extends="Group" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <interface>
+        <field id="theme" type="assocarray" onChange="OnThemeChanged" />
+        <field id="isLiveStream" type="boolean" value="true" />
+        <field id="mediaData" type="assocarray" onChange="OnMediaDataChanged" />
+        <field id="closePlayer" type="boolean" alwaysNotify="true" />
+    </interface>
+
+    <script type="text/brightscript" uri="pkg:/source/utils.brs" />
+    <script type="text/brightscript" uri="pkg:/source/storage.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api.brs" />
+    <script type="text/brightscript" uri="pkg:/components/PlayerScreen.brs" />
+
+    <children>
+        <!-- Full-screen Background Video Node -->
+        <Video
+            id="videoPlayer"
+            width="1920"
+            height="1080" />
+
+        <!-- Buffering / Loading Indicator -->
+        <Group id="bufferingGroup" translation="[860, 480]" visible="false">
+            <Rectangle width="200" height="80" color="0x1A1D24E6">
+                <Label id="bufferingLabel" width="200" height="80" horizAlign="center" vertAlign="center" text="Buffering..." font="font:MediumBoldSystemFont" color="0xF57C00FF" />
+            </Rectangle>
+        </Group>
+
+        <!-- Error Dialog Banner -->
+        <Group id="errorGroup" translation="[560, 440]" visible="false">
+            <Rectangle width="800" height="160" color="0x1A1D24F2">
+                <Label translation="[40, 30]" width="720" text="Stream Unavailable" font="font:LargeBoldSystemFont" color="0xFF5252FF" />
+                <Label id="errorDetailLabel" translation="[40, 80]" width="720" text="Could not connect to live feed. Press Back to return." font="font:SmallSystemFont" color="0xCCCCCCFF" />
+            </Rectangle>
+        </Group>
+
+        <!-- Lower-Third OSD Channel / Program Information Banner -->
+        <Group id="osdGroup" translation="[60, 840]" visible="false">
+            <Rectangle id="osdBg" width="1800" height="180" color="0x14171FE6" />
+
+            <!-- Channel Number Pill -->
+            <Rectangle id="chnoBadge" translation="[30, 30]" width="80" height="42" color="0xF57C00FF">
+                <Label id="chnoLabel" width="80" height="42" horizAlign="center" vertAlign="center" text="101" font="font:MediumBoldSystemFont" color="0xFFFFFFFF" />
+            </Rectangle>
+
+            <!-- Channel Logo -->
+            <Poster
+                id="channelLogo"
+                translation="[130, 20]"
+                width="90"
+                height="60"
+                loadDisplayMode="scaleToFit"
+                uri="pkg:/images/channel_placeholder.png" />
+
+            <!-- Channel Name -->
+            <Label
+                id="channelName"
+                translation="[240, 24]"
+                width="1100"
+                text="Channel Name"
+                font="font:LargeBoldSystemFont"
+                color="0xFFFFFFFF" />
+
+            <!-- Quality / Resolution Badge -->
+            <Rectangle id="qualityBadge" translation="[1650, 30]" width="90" height="36" color="0xF57C00FF">
+                <Label id="qualityLabel" width="90" height="36" horizAlign="center" vertAlign="center" text="FHD" font="font:SmallBoldSystemFont" color="0xFFFFFFFF" />
+            </Rectangle>
+
+            <!-- Current Program Title -->
+            <Label
+                id="programTitle"
+                translation="[240, 80]"
+                width="1300"
+                text="Live Broadcast"
+                font="font:MediumBoldSystemFont"
+                color="0xFFFFFFFF" />
+
+            <!-- Program Timing & Progress -->
+            <Label
+                id="programTime"
+                translation="[240, 124]"
+                width="1300"
+                text=""
+                font="font:SmallSystemFont"
+                color="0xAAAAAAFF" />
+        </Group>
+
+        <!-- Auto-dismiss OSD Timer (4 seconds) -->
+        <Timer id="osdTimer" repeat="false" duration="4" />
+    </children>
+</component>

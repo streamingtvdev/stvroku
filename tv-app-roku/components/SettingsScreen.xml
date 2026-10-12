@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="SettingsScreen" extends="Group" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <interface>
+        <field id="theme" type="assocarray" onChange="OnThemeChanged" />
+        <field id="logoutRequested" type="boolean" alwaysNotify="true" />
+    </interface>
+
+    <script type="text/brightscript" uri="pkg:/source/utils.brs" />
+    <script type="text/brightscript" uri="pkg:/source/storage.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api.brs" />
+    <script type="text/brightscript" uri="pkg:/components/SettingsScreen.brs" />
+
+    <children>
+        <Group translation="[360, 40]">
+            <!-- Settings Card -->
+            <Rectangle id="settingsCardBg" width="1200" height="840" color="0x1A1D24FF" />
+
+            <Label translation="[50, 40]" text="SETTINGS &amp; ACCOUNT" font="font:LargeBoldSystemFont" color="0xFFFFFFFF" />
+
+            <!-- Account Details Section -->
+            <Group translation="[50, 110]">
+                <Label id="hdrAccountStatus" text="ACCOUNT STATUS" font="font:SmallBoldSystemFont" color="0xF57C00FF" />
+                <Label id="accountStatusLabel" translation="[0, 30]" text="Connected" font="font:MediumSystemFont" color="0xFFFFFFFF" />
+
+                <Label id="hdrProvider" translation="[0, 80]" text="SERVICE PROVIDER" font="font:SmallBoldSystemFont" color="0xF57C00FF" />
+                <Label id="providerNameLabel" translation="[0, 110]" text="StreamingTV" font="font:MediumSystemFont" color="0xFFFFFFFF" />
+
+                <Label id="hdrDevice" translation="[0, 160]" text="DEVICE &amp; HARDWARE TIER" font="font:SmallBoldSystemFont" color="0xF57C00FF" />
+                <Label id="deviceModelLabel" translation="[0, 190]" text="Roku Express" font="font:MediumSystemFont" color="0xFFFFFFFF" />
+            </Group>
+
+            <!-- Preferences Section -->
+            <Group translation="[50, 380]">
+                <Label id="hdrPreferences" text="PLAYBACK PREFERENCES" font="font:SmallBoldSystemFont" color="0xF57C00FF" />
+
+                <!-- Live Preview Toggle Button -->
+                <Group translation="[0, 40]">
+                    <Label text="Channel Guide Live Preview Window" font="font:MediumSystemFont" color="0xFFFFFFFF" />
+                    <Rectangle id="btnTogglePreview" translation="[0, 40]" width="320" height="50" color="0x242832FF">
+                        <Label id="btnPreviewLabel" width="320" height="50" horizAlign="center" vertAlign="center" text="PREVIEW: ON" font="font:MediumBoldSystemFont" color="0xFFFFFFFF" />
+                    </Rectangle>
+                </Group>
+            </Group>
+
+            <!-- Logout / Disconnect Button -->
+            <Group translation="[50, 680]">
+                <Rectangle id="btnLogout" width="320" height="54" color="0x772020FF">
+                    <Label id="btnLogoutLabel" width="320" height="54" horizAlign="center" vertAlign="center" text="SIGN OUT" font="font:MediumBoldSystemFont" color="0xFFFFFFFF" />
+                </Rectangle>
+            </Group>
+        </Group>
+
+        <!-- Logout confirmation overlay -->
+        <Group id="confirmOverlay" visible="false">
+            <Rectangle width="1920" height="1080" color="0x000000CC" />
+            <Group translation="[560, 360]">
+                <Rectangle width="800" height="360" color="0x1A1D24FF" />
+                <Label id="confirmTitle" translation="[40, 40]" width="720" horizAlign="center" text="SIGN OUT?" font="font:LargeBoldSystemFont" color="0xFFFFFFFF" />
+                <Label id="confirmBody" translation="[40, 110]" width="720" horizAlign="center" wrap="true" maxLines="3" text="Are you sure?" font="font:MediumSystemFont" color="0xAAAAAAFF" />
+                <Rectangle id="btnConfirmYes" translation="[140, 250]" width="220" height="56" color="0x551515FF">
+                    <Label width="220" height="56" horizAlign="center" vertAlign="center" text="YES, SIGN OUT" font="font:MediumBoldSystemFont" color="0xFFFFFFFF" />
+                </Rectangle>
+                <Rectangle id="btnConfirmNo" translation="[440, 250]" width="220" height="56" color="0x242832FF">
+                    <Label width="220" height="56" horizAlign="center" vertAlign="center" text="CANCEL" font="font:MediumBoldSystemFont" color="0xFFFFFFFF" />
+                </Rectangle>
+            </Group>
+        </Group>
+    </children>
+</component>

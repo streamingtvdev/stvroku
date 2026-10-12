@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="MainScene" extends="Scene" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <script type="text/brightscript" uri="pkg:/source/utils.brs" />
+    <script type="text/brightscript" uri="pkg:/source/storage.brs" />
+    <script type="text/brightscript" uri="pkg:/source/api.brs" />
+    <script type="text/brightscript" uri="pkg:/components/MainScene.brs" />
+
+    <children>
+        <!-- Full-screen Background -->
+        <Rectangle
+            id="bgRect"
+            width="1920"
+            height="1080"
+            color="0x0E1015FF" />
+
+        <!-- Top Header Navigation Bar -->
+        <Group id="headerBar" translation="[60, 40]">
+            <!-- Provider Brand Logo -->
+            <Poster
+                id="brandLogoPoster"
+                width="160"
+                height="60"
+                loadDisplayMode="scaleToFit"
+                uri="pkg:/images/logo_header.png" />
+
+            <!-- Provider Brand Title -->
+            <Label
+                id="brandTitleLabel"
+                translation="[180, 12]"
+                text="StreamingTV"
+                font="font:LargeBoldSystemFont"
+                color="0xFFFFFFFF" />
+
+            <!-- Clear BETA marker (Roku channel is a secondary, in-progress path) -->
+            <Rectangle id="betaBadge" translation="[400, 16]" width="90" height="32" color="0xB26A00FF">
+                <Label width="90" height="32" horizAlign="center" vertAlign="center" text="BETA" font="font:SmallBoldSystemFont" color="0xFFFFFFFF" />
+            </Rectangle>
+
+            <!-- Primary Navigation Tabs -->
+            <Group id="navTabsGroup" translation="[520, 10]">
+                <Rectangle id="tabLiveBg" width="160" height="46" color="0xF57C00FF">
+                    <Label id="tabLiveLabel" width="160" height="46" horizAlign="center" vertAlign="center" text="LIVE TV" font="font:MediumBoldSystemFont" color="0xFFFFFFFF" />
+                </Rectangle>
+                <Rectangle id="tabMoviesBg" translation="[180, 0]" width="160" height="46" color="0x242832FF">
+                    <Label id="tabMoviesLabel" width="160" height="46" horizAlign="center" vertAlign="center" text="MOVIES" font="font:MediumBoldSystemFont" color="0xAAAAAAFF" />
+                </Rectangle>
+                <Rectangle id="tabSeriesBg" translation="[360, 0]" width="160" height="46" color="0x242832FF">
+                    <Label id="tabSeriesLabel" width="160" height="46" horizAlign="center" vertAlign="center" text="SERIES" font="font:MediumBoldSystemFont" color="0xAAAAAAFF" />
+                </Rectangle>
+                <Rectangle id="tabSettingsBg" translation="[540, 0]" width="160" height="46" color="0x242832FF">
+                    <Label id="tabSettingsLabel" width="160" height="46" horizAlign="center" vertAlign="center" text="SETTINGS" font="font:MediumBoldSystemFont" color="0xAAAAAAFF" />
+                </Rectangle>
+            </Group>
+
+            <!-- Tab navigation hint (star menu / rewind / fastforward) -->
+            <Label
+                id="tabHintLabel"
+                translation="[520, 62]"
+                width="1000"
+                text="Press * menu   |   Hold * edit playlists   |   ◀◀ ▶▶ tabs"
+                font="font:SmallSystemFont"
+                color="0x666666FF" />
+
+            <!-- Current Clock Display -->
+            <Label
+                id="clockLabel"
+                translation="[1640, 14]"
+                width="160"
+                horizAlign="right"
+                text="12:00 PM"
+                font="font:MediumSystemFont"
+                color="0xAAAAAAFF" />
+        </Group>
+
+        <!-- Dynamic Screen Container -->
+        <Group id="screenContainer" translation="[0, 120]" />
+
+        <!-- Fullscreen Player Container -->
+        <Group id="playerContainer" visible="false" />
+
+        <!-- Tab Switcher Overlay (Options / star key short-press) -->
+        <Group id="tabMenuOverlay" visible="false">
+            <Rectangle width="1920" height="1080" color="0x000000AA" />
+            <Group id="tabMenuCard" translation="[660, 280]">
+                <Rectangle width="600" height="520" color="0x1A1D24FF" />
+                <Label translation="[40, 30]" width="520" text="GO TO" font="font:LargeBoldSystemFont" color="0xFFFFFFFF" />
+                <LabelList
+                    id="tabMenuList"
+                    translation="[40, 100]"
+                    itemSize="[520, 72]"
+                    itemSpacing="[0, 8]"
+                    drawFocusFeedback="true" />
+                <Label translation="[40, 460]" width="520" text="Press Back to close" font="font:SmallSystemFont" color="0xAAAAAAFF" />
+            </Group>
+        </Group>
+
+        <!-- Playlist Edit Overlay (star long-press): QR + device id + PIN -->
+        <Group id="editCodeOverlay" visible="false">
+            <Rectangle width="1920" height="1080" color="0x000000CC" />
+            <Group id="editCodeCard" translation="[140, 140]">
+                <Rectangle width="1640" height="800" color="0x1A1D24FF" />
+                <Label translation="[60, 40]" width="1520" text="EDIT PLAYLISTS" font="font:LargeBoldSystemFont" color="0xFFFFFFFF" />
+
+                <Poster
+                    id="editQrPoster"
+                    translation="[60, 130]"
+                    width="320"
+                    height="320"
+                    loadDisplayMode="scaleToFit"
+                    uri="" />
+
+                <Label
+                    id="editCodeInstructions"
+                    translation="[440, 120]"
+                    width="1100"
+                    wrap="true"
+                    maxLines="3"
+                    text="Scan the QR code or open the website below. Enter the device ID and PIN to update your playlists."
+                    font="font:MediumSystemFont"
+                    color="0xAAAAAAFF" />
+                <Label
+                    id="editUrlLabel"
+                    translation="[440, 210]"
+                    width="1100"
+                    text="streamingtvroku.pages.dev"
+                    font="font:LargeBoldSystemFont"
+                    color="0xFFA726FF" />
+
+                <Label translation="[440, 300]" width="300" text="DEVICE ID" font="font:SmallBoldSystemFont" color="0xAAAAAAFF" />
+                <Rectangle translation="[440, 335]" width="700" height="70" color="0x0E1015FF">
+                    <Label id="editMacLabel" translation="[10, 10]" width="680" horizAlign="center" vertAlign="center" text="—" font="font:LargeBoldSystemFont" color="0xFFFFFFFF" />
+                </Rectangle>
+
+                <Label translation="[440, 430]" width="300" text="PIN" font="font:SmallBoldSystemFont" color="0xAAAAAAFF" />
+                <Rectangle id="editCodeBoxBg" translation="[440, 465]" width="700" height="90" color="0x0E1015FF">
+                    <Label id="editCodeLabel" translation="[10, 15]" width="680" horizAlign="center" vertAlign="center" text="------" font="font:LargeBoldSystemFont" color="0xF57C00FF" />
+                </Rectangle>
+
+                <Label
+                    id="editCodeStatus"
+                    translation="[440, 590]"
+                    width="1100"
+                    wrap="true"
+                    maxLines="2"
+                    text="Generating secure code..."
+                    font="font:SmallSystemFont"
+                    color="0xAAAAAAFF" />
+                <Label
+                    translation="[60, 720]"
+                    width="1520"
+                    horizAlign="center"
+                    text="Press Back to close"
+                    font="font:SmallSystemFont"
+                    color="0x666666FF" />
+            </Group>
+        </Group>
+
+        <!-- Hold-* detection timer (long-press = edit playlists) -->
+        <Timer id="optionsHoldTimer" repeat="false" duration="0.8" />
+        <!-- Edit code payload poll timer (3-second intervals during edit overlay) -->
+        <Timer id="editPollTimer" repeat="true" duration="3" />
+        <!-- Clock Refresh Timer (1-second intervals) -->
+        <Timer id="clockTimer" repeat="true" duration="1" />
+    </children>
+</component>
